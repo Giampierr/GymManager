@@ -1,0 +1,237 @@
+<div class="page-head">
+  <div>
+    <h1>Pagos</h1>
+    <p>Registro, consulta, búsqueda, descuentos, métodos de pago y anulación autorizada.</p>
+  </div>
+  @if (data.puede('Pagos', 'crear')) {
+    <button class="btn primary" (click)="abrir()">
+      <app-icon name="plus" [size]="16" />Registrar pago
+    </button>
+  }
+</div>
+<div class="grid g3" style="margin-bottom: 16px">
+  <div class="card kpi">
+    <div class="label">Total recaudado</div>
+    <div class="value">{{ soles(data.totalRecaudado()) }}</div>
+  </div>
+  <div class="card kpi">
+    <div class="label">Promedio de pagos</div>
+    <div class="value">{{ soles(data.promedioPagos()) }}</div>
+  </div>
+  <div class="card kpi">
+    <div class="label">Pago de mayor monto</div>
+    @if (data.mayorPago(); as p) {
+      <div class="value">{{ soles(p.monto) }}</div>
+      <div class="small muted">ID {{ p.id }} · {{ fecha(p.fecha) }}</div>
+    } @else {
+      <div class="small muted" style="margin-top: 12px">No existen pagos registrados.</div>
+    }
+  </div>
+</div>
+<div class="grid g21" style="margin-bottom: 16px">
+  <div class="card">
+    <div class="filters">
+      <div class="field">
+        <label>Buscar (socio, código o comprobante)</label
+        ><input
+          class="input"
+          [ngModel]="q()"
+          (ngModelChange)="q.set($event)"
+          placeholder="Ej. Carlos o #5"
+        />
+      </div>
+      <div class="field">
+        <label>Método de pago</label
+        ><select class="select" [ngModel]="metodo()" (ngModelChange)="metodo.set($event)">
+          <option value="">Todos</option>
+          @for (m of metodos; track m) {
+            <option>{{ m }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label>Año</label
+        ><select class="select" [ngModel]="anio()" (ngModelChange)="anio.set($event)">
+          <option value="">Todos</option>
+          <option>2026</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Mes</label
+        ><select class="select" [ngModel]="mes()" (ngModelChange)="mes.set($event)">
+          <option value="">Todos</option>
+          @for (m of nombresMes; track $index) {
+            @if ($index > 0) {
+              <option [value]="$index">{{ m }}</option>
+            }
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label>Monto mayor a (S/)</label
+        ><input
+          type="number"
+          class="input"
+          [ngModel]="mayor()"
+          (ngModelChange)="mayor.set($event)"
+          placeholder="0"
+        />
+      </div>
+      <button class="btn" (click)="limpiar()">Limpiar filtros</button>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Recaudado por mes</h3>
+    <app-bar-chart [etiquetas]="et()" [valores]="val()" titulo="Recaudado por mes" />
+  </div>
+</div>
+<div class="card">
+  <div class="table-wrap stack-cards">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Fecha y hora</th>
+          <th>Socio</th>
+          <th>Concepto</th>
+          <th>Método</th>
+          <th>Descuento</th>
+          <th>Monto</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of lista(); track p.id) {
+          <tr [style.opacity]="p.estado === 'ANULADO' ? 0.6 : 1">
+            <td data-l="ID">{{ p.id }}</td>
+            <td data-l="Fecha">{{ fecha(p.fecha) }} {{ p.fecha.slice(11) }}</td>
+            <td data-l="Socio">{{ data.nombreSocio(p.idSocio) }}</td>
+            <td data-l="Concepto">{{ p.concepto }}</td>
+            <td data-l="Método">{{ p.metodo }}</td>
+            <td data-l="Descuento">{{ p.descuento ? soles(p.descuento) : '—' }}</td>
+            <td data-l="Monto">
+              <b>{{ soles(p.monto) }}</b>
+            </td>
+            <td data-l="Estado"><app-estado [valor]="p.estado" /></td>
+            <td class="td-actions">
+              @if (p.estado === 'REGISTRADO') {
+                <button
+                  class="btn sm danger"
+                  [disabled]="!data.puede('Pagos', 'anular')"
+                  [title]="
+                    data.puede('Pagos', 'anular')
+                      ? 'Anular pago'
+                      : 'Tu rol no tiene permiso para anular pagos'
+                  "
+                  (click)="aAnular.set(p)"
+                >
+                  <app-icon name="ban" [size]="14" />Anular
+                </button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="9" class="empty">No se encontraron pagos.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (modal()) {
+  <app-modal titulo="Registrar pago" (cerrar)="modal.set(false)"
+    ><div class="form-grid">
+      <div class="field full">
+        <label>Socio</label
+        ><select class="select" [(ngModel)]="fSocio" [class.invalid]="intento() && !fSocio">
+          <option [ngValue]="0">Selecciona un socio…</option>
+          @for (s of data.sociosActivos(); track s.id) {
+            <option [ngValue]="s.id">{{ s.codigo }} · {{ s.nombre }} {{ s.apellido }}</option>
+          }
+        </select>
+        @if (intento() && !fSocio) {
+          <span class="err">Selecciona un socio.</span>
+        }
+      </div>
+      <div class="field">
+        <label>Concepto</label
+        ><select class="select" [(ngModel)]="fConcepto" (ngModelChange)="alCambiarConcepto()">
+          @for (p of data.planes(); track p.id) {
+            <option [value]="'Membresía ' + p.nombre">Membresía {{ p.nombre }}</option>
+          }
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Método de pago</label
+        ><select class="select" [(ngModel)]="fMetodo">
+          @for (m of metodos; track m) {
+            <option>{{ m }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label>Monto (S/)</label
+        ><input
+          type="number"
+          class="input"
+          [(ngModel)]="fMonto"
+          [class.invalid]="intento() && fMonto <= 0"
+        />
+        @if (intento() && fMonto <= 0) {
+          <span class="err">El monto debe ser mayor a 0.</span>
+        }
+      </div>
+      <div class="field">
+        <label>Descuento</label>
+        <div class="row" style="flex-wrap: nowrap">
+          <input type="number" class="input" [(ngModel)]="fDesc" /><select
+            class="select"
+            style="width: 90px"
+            [(ngModel)]="fTipoDesc"
+          >
+            <option value="S">S/</option>
+            <option value="P">%</option>
+          </select>
+        </div>
+        @if (intento() && descuentoMonto() > fMonto) {
+          <span class="err">El descuento no puede superar el monto.</span>
+        }
+      </div>
+      <div class="card full" style="box-shadow: none">
+        <div class="row">
+          <span class="muted">Total a pagar</span>
+          <div class="spacer"></div>
+          <b style="font-size: 22px">{{ soles(total()) }}</b>
+        </div>
+      </div>
+    </div>
+    <ng-container pie
+      ><button class="btn" (click)="modal.set(false)">Cancelar</button
+      ><button class="btn primary" [disabled]="procesando()" (click)="registrar()">
+        {{ procesando() ? 'Procesando…' : 'Confirmar pago' }}
+      </button></ng-container
+    ></app-modal
+  >
+}
+@if (aAnular(); as p) {
+  <app-confirm
+    titulo="Anular pago"
+    [mensaje]="
+      'Anularás el pago #' +
+      p.id +
+      ' de ' +
+      soles(p.monto) +
+      '. El pago quedará marcado como ANULADO y no se eliminará.'
+    "
+    textoConfirmar="Anular pago"
+    [deshabilitado]="!motivo.trim()"
+    (cancelar)="aAnular.set(null)"
+    (confirmar)="anular(p)"
+    ><div class="field" style="margin-top: 14px">
+      <label>Motivo (obligatorio)</label><input class="input" [(ngModel)]="motivo" /></div
+  ></app-confirm>
+}

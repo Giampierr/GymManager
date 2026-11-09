@@ -1,0 +1,57 @@
+<div class="wrap">
+  <div class="card box">
+    <h2>Recuperar contraseña</h2>
+    <div class="small muted">Paso {{ paso() }} de 3</div>
+    <div class="bar-cap">
+      <div [style.width.%]="paso() * 33.3" style="background: var(--accent)"></div>
+    </div>
+    @if (paso() === 1) {
+      <div class="field">
+        <label for="c">Usuario o correo</label><input id="c" class="input" [(ngModel)]="contacto" />
+      </div>
+      <button class="btn primary" (click)="paso1()">Enviar código</button>
+    }
+    @if (paso() === 2) {
+      <p class="muted" style="margin: 0">Enviamos un código de 6 dígitos a tu correo registrado.</p>
+      <div class="field">
+        <label for="k">Código de verificación</label
+        ><input id="k" class="input mono" maxlength="6" [(ngModel)]="codigo" placeholder="123456" />
+      </div>
+      <button class="btn primary" (click)="paso2()">Verificar</button>
+    }
+    @if (paso() === 3) {
+      <div class="field">
+        <label for="n">Nueva contraseña</label
+        ><input id="n" type="password" class="input" [(ngModel)]="nueva" />
+        <div class="bar-cap">
+          <div
+            [style.width.%]="fuerza() * 25"
+            [style.background]="fuerza() < 3 ? 'var(--bad)' : 'var(--ok)'"
+          ></div>
+        </div>
+        <span class="small muted"
+          >Seguridad: {{ ['Muy débil', 'Débil', 'Media', 'Buena', 'Fuerte'][fuerza()] }}</span
+        >
+      </div>
+      <div class="field">
+        <label for="r">Confirmar contraseña</label
+        ><input id="r" type="password" class="input" [(ngModel)]="repite" />
+      </div>
+      <button class="btn primary" (click)="paso3()">Guardar contraseña</button>
+    }
+    @if (paso() === 4) {
+      <div class="result ok">
+        <div>
+          <h3>Contraseña actualizada</h3>
+          <p>Ya puedes iniciar sesión con tu nueva contraseña.</p>
+        </div>
+      </div>
+    }
+    @if (error()) {
+      <div class="err" role="alert">{{ error() }}</div>
+    }
+    <a routerLink="/login" class="small" style="color: var(--accent)"
+      >← Volver al inicio de sesión</a
+    >
+  </div>
+</div>

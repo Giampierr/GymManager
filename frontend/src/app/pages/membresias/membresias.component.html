@@ -1,0 +1,332 @@
+<div class="page-head">
+  <div>
+    <h1>Planes y membresías</h1>
+    <p>Creación de planes, contratación, renovación, suspensión y consulta.</p>
+  </div>
+</div>
+<div class="tabs">
+  <button class="tab" [class.active]="tab() === 'm'" (click)="tab.set('m')">Membresías</button
+  ><button class="tab" [class.active]="tab() === 'p'" (click)="tab.set('p')">Planes</button>
+</div>
+
+@if (tab() === 'm') {
+  <div class="card">
+    <div class="row" style="margin-bottom: 14px">
+      <div class="field" style="width: 220px">
+        <label>Mostrar</label
+        ><select class="select" [ngModel]="filtro()" (ngModelChange)="filtro.set($event)">
+          <option value="ACTIVA">Activas</option>
+          <option value="">Todas</option>
+          <option value="VENCIDA">Vencidas</option>
+          <option value="SUSPENDIDA">Suspendidas</option>
+        </select>
+      </div>
+      <div class="spacer"></div>
+      @if (data.puede('Membresías', 'crear')) {
+        <button class="btn primary" (click)="abrirContratar()">
+          <app-icon name="plus" [size]="16" />Contratar membresía
+        </button>
+      }
+    </div>
+    <div class="table-wrap stack-cards">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Socio</th>
+            <th>Código</th>
+            <th>Plan</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Precio</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (m of lista(); track m.id) {
+            <tr>
+              <td data-l="ID">{{ m.id }}</td>
+              <td data-l="Socio">{{ data.nombreSocio(m.idSocio) }}</td>
+              <td data-l="Código" class="mono">{{ data.socio(m.idSocio)?.codigo }}</td>
+              <td data-l="Plan">{{ data.plan(m.idPlan)?.nombre }}</td>
+              <td data-l="Inicio">{{ fecha(m.fechaInicio) }}</td>
+              <td data-l="Fin">
+                {{ fecha(m.fechaFin) }}
+                @if (porVencer(m)) {
+                  <span class="chip warn">por vencer</span>
+                }
+              </td>
+              <td data-l="Precio">{{ soles(m.precio) }}</td>
+              <td data-l="Estado"><app-estado [valor]="m.estado" /></td>
+              <td class="td-actions">
+                <button class="icon-btn" title="Consultar" (click)="detalle.set(m)">
+                  <app-icon name="eye" />
+                </button>
+                @if (data.puede('Membresías', 'editar')) {
+                  <button class="icon-btn" title="Renovar" (click)="aRenovar.set(m)">
+                    <app-icon name="refresh" />
+                  </button>
+                }
+                @if (data.puede('Membresías', 'desactivar')) {
+                  @if (m.estado === 'ACTIVA') {
+                    <button class="icon-btn" title="Suspender" (click)="abrirSuspender(m)">
+                      <app-icon name="pause" />
+                    </button>
+                  }
+                  <button class="icon-btn danger" title="Eliminar" (click)="aEliminar.set(m)">
+                    <app-icon name="trash" />
+                  </button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="9" class="empty">No se encontraron membresías.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+} @else {
+  <div class="card">
+    <div class="row" style="margin-bottom: 14px">
+      <h3>Planes disponibles</h3>
+      <div class="spacer"></div>
+      @if (data.puede('Membresías', 'crear')) {
+        <button class="btn primary" (click)="abrirPlan()">
+          <app-icon name="plus" [size]="16" />Nuevo plan
+        </button>
+      }
+    </div>
+    <div class="grid g3">
+      @for (p of data.planes(); track p.id) {
+        <div class="card" style="box-shadow: none">
+          <div class="row">
+            <h3>{{ p.nombre }}</h3>
+            <div class="spacer"></div>
+            <span class="chip ok">ACTIVO</span>
+          </div>
+          <div
+            style="font-size: 30px; font-weight: 800; margin: 10px 0; font-family: Cambria, serif"
+          >
+            {{ soles(p.precio) }}
+          </div>
+          <div class="small muted">{{ p.dias }} días</div>
+          @if (data.puede('Membresías', 'editar')) {
+            <button class="btn sm" style="margin-top: 12px" (click)="abrirPrecio(p)">
+              Modificar precio
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </div>
+}
+
+@if (modalContratar()) {
+  <app-modal titulo="Contratar membresía" (cerrar)="modalContratar.set(false)"
+    ><div class="form-grid">
+      <div class="field full">
+        <label>Socio</label
+        ><select class="select" [(ngModel)]="cSocio" [class.invalid]="intento() && !cSocio">
+          <option [ngValue]="0">Selecciona un socio…</option>
+          @for (s of data.sociosActivos(); track s.id) {
+            <option [ngValue]="s.id">{{ s.codigo }} · {{ s.nombre }} {{ s.apellido }}</option>
+          }
+        </select>
+        @if (intento() && !cSocio) {
+          <span class="err">Selecciona un socio.</span>
+        }
+      </div>
+      <div class="field">
+        <label>Plan</label
+        ><select class="select" [(ngModel)]="cPlan">
+          @for (p of data.planes(); track p.id) {
+            <option [ngValue]="p.id">{{ p.nombre }} · {{ soles(p.precio) }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label>Fecha de inicio</label
+        ><input
+          type="date"
+          class="input"
+          [(ngModel)]="cInicio"
+          [class.invalid]="intento() && esFutura(cInicio)"
+        />
+        @if (intento() && esFutura(cInicio)) {
+          <span class="err">La fecha de inicio no puede ser futura.</span>
+        }
+      </div>
+      <div class="card full" style="box-shadow: none">
+        <div class="row">
+          <div>
+            <div class="small muted">Fecha de fin</div>
+            <b>{{ fecha(calcFin()) }}</b>
+          </div>
+          <div class="spacer"></div>
+          <div>
+            <div class="small muted">Precio</div>
+            <b>{{ soles(data.plan(cPlan)?.precio ?? 0) }}</b>
+          </div>
+        </div>
+      </div>
+    </div>
+    <ng-container pie
+      ><button class="btn" (click)="modalContratar.set(false)">Cancelar</button
+      ><button class="btn primary" (click)="contratar()">Contratar</button></ng-container
+    ></app-modal
+  >
+}
+
+@if (aRenovar(); as m) {
+  <app-confirm
+    titulo="Renovar membresía"
+    [mensaje]="
+      'Se renovará la membresía de ' +
+      data.nombreSocio(m.idSocio) +
+      ' por un nuevo periodo del plan ' +
+      data.plan(m.idPlan)?.nombre +
+      ' (' +
+      soles(data.plan(m.idPlan)?.precio ?? 0) +
+      ').'
+    "
+    textoConfirmar="Renovar"
+    [peligro]="false"
+    (cancelar)="aRenovar.set(null)"
+    (confirmar)="renovar(m)"
+  />
+}
+@if (aSuspender(); as m) {
+  <app-confirm
+    titulo="Suspender membresía"
+    [mensaje]="'Suspender la membresía de ' + data.nombreSocio(m.idSocio) + '.'"
+    textoConfirmar="Suspender"
+    [deshabilitado]="!motivo.trim()"
+    (cancelar)="aSuspender.set(null)"
+    (confirmar)="suspender(m)"
+    ><div class="field" style="margin-top: 14px">
+      <label>Motivo (obligatorio)</label><input class="input" [(ngModel)]="motivo" /></div
+  ></app-confirm>
+}
+@if (aEliminar(); as m) {
+  <app-confirm
+    titulo="Eliminar membresía"
+    [mensaje]="
+      '¿Seguro que deseas eliminar la membresía #' + m.id + '? Esta acción no se puede deshacer.'
+    "
+    textoConfirmar="Eliminar"
+    (cancelar)="aEliminar.set(null)"
+    (confirmar)="eliminar(m)"
+  />
+}
+@if (detalle(); as m) {
+  <app-modal [titulo]="'Membresía #' + m.id" (cerrar)="detalle.set(null)"
+    ><div class="grid g2">
+      <div>
+        <div class="small muted">Socio</div>
+        <b>{{ data.nombreSocio(m.idSocio) }}</b>
+      </div>
+      <div>
+        <div class="small muted">Plan</div>
+        <b>{{ data.plan(m.idPlan)?.nombre }}</b>
+      </div>
+      <div>
+        <div class="small muted">Vigencia</div>
+        <b>{{ fecha(m.fechaInicio) }} → {{ fecha(m.fechaFin) }}</b>
+      </div>
+      <div>
+        <div class="small muted">Precio</div>
+        <b>{{ soles(m.precio) }}</b>
+      </div>
+      <div>
+        <div class="small muted">Estado</div>
+        <app-estado [valor]="m.estado" />
+      </div>
+    </div>
+    <h3 style="margin: 18px 0 8px">Historial del socio</h3>
+    @for (x of historial(m.idSocio); track x.id) {
+      <div class="row small" style="padding: 4px 0">
+        <span>#{{ x.id }} · {{ fecha(x.fechaInicio) }} → {{ fecha(x.fechaFin) }}</span>
+        <div class="spacer"></div>
+        <app-estado [valor]="x.estado" />
+      </div>
+    }
+    <ng-container pie
+      ><button class="btn" (click)="detalle.set(null)">Cerrar</button></ng-container
+    ></app-modal
+  >
+}
+@if (modalPlan()) {
+  <app-modal titulo="Nuevo plan" [ancho]="480" (cerrar)="modalPlan.set(false)"
+    ><div class="stack">
+      <div class="field">
+        <label>Nombre</label
+        ><input
+          class="input"
+          [(ngModel)]="pNombre"
+          [class.invalid]="intento() && !pNombre.trim()"
+        />
+      </div>
+      <div class="field">
+        <label>Duración (mes)</label
+        ><input
+          type="number"
+          class="input"
+          min="1"
+          [(ngModel)]="pDias"
+          [class.invalid]="intento() && pDias <= 0
+          "
+        />
+      </div>
+      <div class="field">
+        <label>Precio (S/)</label
+        ><input
+          type="number"
+          class="input"
+          min="0"
+          [(ngModel)]="pPrecio"
+          [class.invalid]="intento() && pPrecio <= 0"
+        />
+        @if (intento() && pPrecio <= 0) {
+          <span class="err">El precio debe ser mayor a 0.</span>
+        }
+      </div>
+    </div>
+    <ng-container pie
+      ><button class="btn" (click)="modalPlan.set(false)">Cancelar</button
+      ><button class="btn primary" (click)="crearPlan()">Crear plan</button></ng-container
+    ></app-modal
+  >
+}
+@if (planPrecio(); as p) {
+  <app-modal
+    [titulo]="'Modificar precio · ' + p.nombre"
+    [ancho]="480"
+    (cerrar)="planPrecio.set(null)"
+    ><div class="stack">
+      <div class="row">
+        <div>
+          <div class="small muted">Precio actual</div>
+          <b>{{ soles(p.precio) }}</b>
+        </div>
+      </div>
+      <div class="field">
+        <label>Nuevo precio (S/)</label
+        ><input
+          type="number"
+          class="input"
+          [(ngModel)]="pPrecio"
+          [class.invalid]="intento() && pPrecio <= 0"
+        />
+      </div>
+      <div class="result warn"><p>El cambio no afecta a las membresías ya contratadas.</p></div>
+    </div>
+    <ng-container pie
+      ><button class="btn" (click)="planPrecio.set(null)">Cancelar</button
+      ><button class="btn primary" (click)="cambiarPrecio(p)">Guardar precio</button></ng-container
+    ></app-modal
+  >
+}

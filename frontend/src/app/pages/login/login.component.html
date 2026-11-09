@@ -1,0 +1,85 @@
+
+<div class="wrap">
+  <button class="btn sm theme" (click)="tema.alternar()">
+    <app-icon
+      [name]="tema.modo() === 'light' ? 'moon' : 'sun'"
+      [size]="16"
+    />
+    {{ tema.modo() === 'light' ? 'Modo oscuro' : 'Modo claro' }}
+  </button>
+
+  <form class="card box" (ngSubmit)="entrar()">
+    <div class="brand">
+      <div class="logo">F</div>
+      <div>
+        <h2>FORMA Gym Club</h2>
+        <div class="small muted">GYM MANAGER · Inicio de sesión</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="u">Correo electrónico</label>
+      <input
+        id="u"
+        class="input"
+        type="email"
+        name="u"
+        [(ngModel)]="usuario"
+        autocomplete="username"
+        placeholder="ejemplo@correo.com"
+        required
+        [class.invalid]="!!error()"
+      />
+    </div>
+
+    <div class="field">
+      <label for="p">Contraseña</label>
+
+      <div class="row" style="flex-wrap: nowrap">
+        <input
+          id="p"
+          class="input"
+          name="p"
+          [type]="ver() ? 'text' : 'password'"
+          [(ngModel)]="clave"
+          autocomplete="current-password"
+          placeholder="Ingresa tu contraseña"
+          required
+          [class.invalid]="!!error()"
+        />
+
+        <button
+          type="button"
+          class="icon-btn"
+          (click)="ver.set(!ver())"
+          aria-label="Mostrar u ocultar contraseña"
+        >
+          <app-icon name="eye" />
+        </button>
+      </div>
+    </div>
+
+    @if (error()) {
+      <div class="err" role="alert">
+        {{ error() }}
+      </div>
+    }
+
+    <button
+      class="btn primary"
+      style="justify-content: center"
+      type="submit"
+      [disabled]="cargando()"
+    >
+      {{ cargando() ? 'Ingresando...' : 'Ingresar' }}
+    </button>
+
+    <a
+      routerLink="/recuperar"
+      class="small"
+      style="text-align: center; color: var(--accent)"
+    >
+      ¿Olvidaste tu contraseña?
+    </a>
+  </form>
+</div>

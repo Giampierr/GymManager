@@ -1,0 +1,184 @@
+<div class="page-head">
+  <div>
+    <h1>Entrenadores</h1>
+    <p>Registro, modificación, activación y asignación de clases.</p>
+  </div>
+  @if (data.puede('Entrenadores', 'crear')) {
+    <button class="btn primary" (click)="nuevo()">
+      <app-icon name="plus" [size]="16" />Nuevo entrenador
+    </button>
+  }
+</div>
+<div class="card">
+  <div class="table-wrap stack-cards">
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Documento</th>
+          <th>Teléfono</th>
+          <th>Especialidad</th>
+          <th>Clases</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (e of data.entrenadores(); track e.id) {
+          <tr>
+            <td data-l="Nombre">
+              <b>{{ e.nombre }}</b>
+            </td>
+            <td data-l="Documento">{{ e.documento }}</td>
+            <td data-l="Teléfono">{{ e.telefono }}</td>
+            <td data-l="Especialidad">{{ e.especialidad }}</td>
+            <td data-l="Clases">{{ clasesDe(e.id).length }}</td>
+            <td data-l="Estado"><app-estado [valor]="e.activo ? 'ACTIVO' : 'INACTIVO'" /></td>
+            <td class="td-actions">
+              <button class="icon-btn" title="Ver agenda" (click)="agenda.set(e)">
+                <app-icon name="calendar" />
+              </button>
+              @if (data.puede('Entrenadores', 'editar')) {
+                <button class="icon-btn" title="Editar" (click)="editar(e)">
+                  <app-icon name="edit" /></button
+                ><button class="btn sm" (click)="abrirAsignar(e)">Asignar clases</button>
+              }
+              @if (data.puede('Entrenadores', 'desactivar')) {
+                <button
+                  class="icon-btn"
+                  [title]="e.activo ? 'Desactivar' : 'Activar'"
+                  (click)="aToggle.set(e)"
+                >
+                  <app-icon [name]="e.activo ? 'ban' : 'refresh'" />
+                </button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="empty">No hay entrenadores registrados.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (form(); as f) {
+  <app-modal [titulo]="f.id ? 'Editar entrenador' : 'Nuevo entrenador'" (cerrar)="form.set(null)"
+    ><div class="form-grid">
+      <div class="field full">
+        <label>Nombre completo</label
+        ><input
+          class="input"
+          [(ngModel)]="f.nombre"
+          [class.invalid]="intento() && !f.nombre?.trim()"
+        />
+        @if (intento() && !f.nombre?.trim()) {
+          <span class="err">El nombre es obligatorio.</span>
+        }
+      </div>
+      <div class="field">
+        <label>Documento (DNI)</label
+        ><input
+          class="input"
+          [(ngModel)]="f.documento"
+          [class.invalid]="intento() && !dni(f.documento)"
+        />
+        @if (intento() && !dni(f.documento)) {
+          <span class="err">El DNI debe tener 8 dígitos.</span>
+        }
+      </div>
+      <div class="field">
+        <label>Teléfono</label
+        ><input
+          class="input"
+          [(ngModel)]="f.telefono"
+          [class.invalid]="intento() && !tel(f.telefono)"
+        />
+        @if (intento() && !tel(f.telefono)) {
+          <span class="err">Debe tener 9 dígitos y empezar con 9.</span>
+        }
+      </div>
+      <div class="field full">
+        <label>Especialidad</label
+        ><input
+          class="input"
+          [(ngModel)]="f.especialidad"
+          [class.invalid]="intento() && !f.especialidad?.trim()"
+        />
+        @if (intento() && !f.especialidad?.trim()) {
+          <span class="err">La especialidad es obligatoria.</span>
+        }
+      </div>
+    </div>
+    <ng-container pie
+      ><button class="btn" (click)="form.set(null)">Cancelar</button
+      ><button class="btn primary" (click)="guardar()">Guardar</button></ng-container
+    ></app-modal
+  >
+}
+@if (aToggle(); as e) {
+  <app-confirm
+    [titulo]="e.activo ? 'Desactivar entrenador' : 'Activar entrenador'"
+    [mensaje]="
+      '¿Seguro que deseas ' + (e.activo ? 'desactivar' : 'activar') + ' a ' + e.nombre + '?'
+    "
+    [peligro]="e.activo"
+    [textoConfirmar]="e.activo ? 'Desactivar' : 'Activar'"
+    (cancelar)="aToggle.set(null)"
+    (confirmar)="toggle(e)"
+  />
+}
+@if (asignar(); as e) {
+  <app-modal [titulo]="'Asignar clases · ' + e.nombre" (cerrar)="asignar.set(null)"
+    ><p class="muted" style="margin-top: 0">Selecciona las clases que dictará este entrenador.</p>
+    <div class="stack" style="gap: 8px">
+      @for (c of data.clases(); track c.id) {
+        <label class="row card" style="box-shadow: none; padding: 10px 14px; cursor: pointer"
+          ><input type="checkbox" [checked]="sel().includes(c.id)" (change)="marcar(c.id)" /><b>{{
+            c.nombre
+          }}</b
+          ><span class="muted small">{{ dias[c.dia] }} {{ c.hora }} · {{ c.sala }}</span>
+          <div class="spacer"></div>
+          @if (c.idEntrenador !== e.id) {
+            <span class="small muted">hoy: {{ data.entrenador(c.idEntrenador)?.nombre }}</span>
+          }
+        </label>
+      }
+    </div>
+    @if (cruce()) {
+      <div class="result warn" style="margin-top: 14px" role="alert">
+        <div>
+          <h3>Cruce de horarios</h3>
+          <p>{{ cruce() }}</p>
+        </div>
+      </div>
+    }
+    <ng-container pie
+      ><button class="btn" (click)="asignar.set(null)">Cancelar</button
+      ><button class="btn primary" [disabled]="!!cruce()" (click)="guardarAsignacion(e)">
+        Guardar asignación
+      </button></ng-container
+    ></app-modal
+  >
+}
+@if (agenda(); as e) {
+  <app-modal [titulo]="'Agenda semanal · ' + e.nombre" (cerrar)="agenda.set(null)"
+    ><div class="stack" style="gap: 8px">
+      @for (d of [1, 2, 3, 4, 5, 6]; track d) {
+        <div class="row" style="padding: 8px 0; border-bottom: 1px solid var(--border)">
+          <b style="width: 90px">{{ dias[d] }}</b>
+          @for (c of clasesDe(e.id, d); track c.id) {
+            <span class="chip acc">{{ c.hora }} · {{ c.nombre }} ({{ c.sala }})</span>
+          } @empty {
+            <span class="muted small">Libre</span>
+          }
+        </div>
+      }
+    </div>
+    <ng-container pie
+      ><button class="btn" (click)="agenda.set(null)">Cerrar</button></ng-container
+    ></app-modal
+  >
+}

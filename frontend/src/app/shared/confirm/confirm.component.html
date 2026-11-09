@@ -1,0 +1,16 @@
+<app-modal [titulo]="titulo" [ancho]="480" (cerrar)="cancelar.emit()"
+  ><p style="margin: 0">{{ mensaje }}</p>
+  <ng-content />
+  <ng-container pie
+    ><button class="btn" (click)="cancelar.emit()">Cancelar</button
+    ><button
+      class="btn"
+      [class.danger]="peligro"
+      [class.primary]="!peligro"
+      [disabled]="deshabilitado"
+      (click)="confirmar.emit()"
+    >
+      {{ textoConfirmar }}
+    </button></ng-container
+  ></app-modal
+>

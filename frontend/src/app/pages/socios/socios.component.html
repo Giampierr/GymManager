@@ -1,0 +1,329 @@
+<div class="page-head">
+  <div>
+    <h1>Socios</h1>
+    <p>Registro, consulta, modificación y desactivación de socios.</p>
+  </div>
+  @if (data.puede('Socios', 'crear')) {
+    <button class="btn primary" (click)="nuevo()">
+      <app-icon name="plus" [size]="16" />Nuevo socio
+    </button>
+  }
+</div>
+
+<div class="card" style="margin-bottom: 16px">
+  <div class="filters">
+    <div class="field">
+      <label>Buscar (nombre, apellido o código)</label
+      ><input
+        class="input"
+        [ngModel]="texto()"
+        (ngModelChange)="texto.set($event)"
+        placeholder="Ej. ramirez"
+      />
+    </div>
+    <div class="field">
+      <label>Tipo de documento</label
+      ><select class="select" [ngModel]="tipo()" (ngModelChange)="tipo.set($event)">
+        <option value="">Todos</option>
+        <option value="Dni">DNI</option>
+        <option value="CarnetExtranjeria">Carnet de extranjería</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Año de registro</label
+      ><select class="select" [ngModel]="anio()" (ngModelChange)="anio.set($event)">
+        <option value="">Todos</option>
+        <option>2026</option>
+        <option>2025</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Mes de registro</label
+      ><select class="select" [ngModel]="mes()" (ngModelChange)="mes.set($event)">
+        <option value="">Todos</option>
+        @for (m of meses; track $index) {
+          <option [value]="$index + 1">{{ m }}</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label>Dominio de correo</label
+      ><input
+        class="input"
+        [ngModel]="dominio()"
+        (ngModelChange)="dominio.set($event)"
+        placeholder="gmail.com"
+      />
+    </div>
+    <div class="field">
+      <label>Código exacto</label>
+      <div class="row" style="flex-wrap: nowrap">
+        <input
+          class="input"
+          [(ngModel)]="codigoBuscado"
+          placeholder="SOC016"
+          (keydown.enter)="buscarCodigo()"
+        /><button class="btn" (click)="buscarCodigo()" aria-label="Buscar por código">
+          <app-icon name="search" [size]="16" />
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="row" style="margin-top: 14px">
+    <button class="btn sm" (click)="ordenar.set(!ordenar())">
+      <app-icon name="refresh" [size]="14" />{{
+        ordenar() ? 'Quitar orden' : 'Ordenar por apellido y nombre'
+      }}</button
+    ><button class="btn sm" (click)="limpiar()">Limpiar filtros</button>
+    <div class="spacer"></div>
+    <span class="small muted"
+      ><b>{{ lista().length }}</b> resultados</span
+    >
+    <span class="chip acc">DNI: {{ conteo().dni }}</span
+    ><span class="chip acc">Carnet de extranjería: {{ conteo().ce }}</span>
+  </div>
+</div>
+
+@if (busqueda() === 'no') {
+  <div class="result warn" style="margin-bottom: 16px" role="status">
+    <div><h3>No existe un socio con ese código</h3></div>
+  </div>
+}
+@if (busqueda() === 'si' && encontrado(); as s) {
+  <div class="result ok" style="margin-bottom: 16px">
+    <div>
+      <h3>{{ s.nombre }} {{ s.apellido }} · {{ s.codigo }}</h3>
+      <p>
+        {{ s.tipoDocumento === 'Dni' ? 'DNI' : 'Carnet' }} {{ s.nroDocumento }} · {{ s.telefono }} ·
+        {{ s.email }}
+      </p>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn sm" (click)="verFicha(s)">Ver ficha</button>
+  </div>
+}
+
+<div class="card">
+  <div class="table-wrap stack-cards">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Código</th>
+          <th>Nombre</th>
+          <th>Apellido</th>
+          <th>Documento</th>
+          <th>Teléfono</th>
+          <th>Correo</th>
+          <th>Registro</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (s of lista(); track s.id) {
+          <tr>
+            <td data-l="ID">{{ s.id }}</td>
+            <td data-l="Código" class="mono">{{ s.codigo }}</td>
+            <td data-l="Nombre">{{ s.nombre }}</td>
+            <td data-l="Apellido">{{ s.apellido }}</td>
+            <td data-l="Documento">
+              {{ s.tipoDocumento === 'Dni' ? 'DNI' : 'CE' }} {{ s.nroDocumento }}
+            </td>
+            <td data-l="Teléfono">{{ s.telefono }}</td>
+            <td data-l="Correo">{{ s.email }}</td>
+            <td data-l="Registro">{{ fecha(s.fechaRegistro) }}</td>
+            <td data-l="Estado"><app-estado [valor]="s.activo ? 'ACTIVO' : 'INACTIVO'" /></td>
+            <td class="td-actions">
+              <button class="icon-btn" title="Ver ficha" (click)="verFicha(s)">
+                <app-icon name="eye" />
+              </button>
+              @if (data.puede('Socios', 'editar')) {
+                <button class="icon-btn" title="Editar" (click)="editar(s)">
+                  <app-icon name="edit" />
+                </button>
+              }
+              @if (data.puede('Socios', 'desactivar')) {
+                <button
+                  class="icon-btn"
+                  [title]="s.activo ? 'Desactivar' : 'Reactivar'"
+                  (click)="aDesactivar.set(s)"
+                >
+                  <app-icon [name]="s.activo ? 'ban' : 'refresh'" /></button
+                ><button class="icon-btn danger" title="Eliminar" (click)="aEliminar.set(s)">
+                  <app-icon name="trash" />
+                </button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="10" class="empty">No se encontraron socios.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (form(); as f) {
+  <app-modal [titulo]="f.id ? 'Editar socio' : 'Nuevo socio'" (cerrar)="form.set(null)">
+    <div class="form-grid">
+      <div class="field">
+        <label>Código</label
+        ><input class="input" [(ngModel)]="f.codigo" [class.invalid]="e().codigo" />
+        @if (e().codigo) {
+          <span class="err">{{ e().codigo }}</span>
+        }
+      </div>
+      <div class="field">
+        <label>Fecha de registro</label
+        ><input
+          type="date"
+          class="input"
+          [(ngModel)]="f.fechaRegistro"
+          [class.invalid]="e().fechaRegistro"
+        />
+        @if (e().fechaRegistro) {
+          <span class="err">{{ e().fechaRegistro }}</span>
+        }
+      </div>
+      <div class="field">
+        <label>Nombre</label
+        ><input class="input" [(ngModel)]="f.nombre" [class.invalid]="e().nombre" />
+        @if (e().nombre) {
+          <span class="err">{{ e().nombre }}</span>
+        }
+      </div>
+      <div class="field">
+        <label>Apellido</label
+        ><input class="input" [(ngModel)]="f.apellido" [class.invalid]="e().apellido" />
+        @if (e().apellido) {
+          <span class="err">{{ e().apellido }}</span>
+        }
+      </div>
+      <div class="field">
+        <label>Tipo de documento</label
+        ><select class="select" [(ngModel)]="f.tipoDocumento">
+          <option value="Dni">DNI</option>
+          <option value="CarnetExtranjeria">Carnet de extranjería</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Nro. de documento</label
+        ><input class="input" [(ngModel)]="f.nroDocumento" [class.invalid]="e().nroDocumento" />
+        @if (e().nroDocumento) {
+          <span class="err">{{ e().nroDocumento }}</span>
+        }
+      </div>
+      <div class="field">
+        <label>Teléfono</label
+        ><input class="input" [(ngModel)]="f.telefono" [class.invalid]="e().telefono" />
+        @if (e().telefono) {
+          <span class="err">{{ e().telefono }}</span>
+        }
+      </div>
+      <div class="field">
+        <label>Correo</label
+        ><input class="input" [(ngModel)]="f.email" [class.invalid]="e().email" />
+        @if (e().email) {
+          <span class="err">{{ e().email }}</span>
+        }
+      </div>
+    </div>
+    <ng-container pie
+      ><button class="btn" (click)="form.set(null)">Cancelar</button
+      ><button class="btn primary" (click)="guardar()">Guardar</button></ng-container
+    ></app-modal
+  >
+}
+
+@if (ficha(); as s) {
+  <app-modal [titulo]="s.nombre + ' ' + s.apellido" (cerrar)="ficha.set(null)">
+    <div class="grid g2">
+      <div>
+        <div class="small muted">Código</div>
+        <b>{{ s.codigo }}</b>
+      </div>
+      <div>
+        <div class="small muted">Documento</div>
+        <b>{{ s.tipoDocumento === 'Dni' ? 'DNI' : 'Carnet' }} {{ s.nroDocumento }}</b>
+      </div>
+      <div>
+        <div class="small muted">Teléfono</div>
+        <b>{{ s.telefono }}</b>
+      </div>
+      <div>
+        <div class="small muted">Correo</div>
+        <b>{{ s.email }}</b>
+      </div>
+    </div>
+    <h3 style="margin: 18px 0 8px">Membresía vigente</h3>
+    @if (membresiaDe(s.id); as m) {
+      <div class="row">
+        <app-estado [valor]="m.estado" /><span
+          >{{ data.plan(m.idPlan)?.nombre }} · {{ fecha(m.fechaInicio) }} →
+          {{ fecha(m.fechaFin) }} · {{ soles(m.precio) }}</span
+        >
+      </div>
+    } @else {
+      <span class="muted">Sin membresía.</span>
+    }
+    <h3 style="margin: 18px 0 8px">Últimos pagos</h3>
+    @for (p of pagosDe(s.id); track p.id) {
+      <div class="row small" style="padding: 4px 0">
+        <span>{{ fecha(p.fecha) }}</span
+        ><span class="spacer"></span><b>{{ soles(p.monto) }}</b
+        ><app-estado [valor]="p.estado" />
+      </div>
+    } @empty {
+      <span class="muted">Sin pagos.</span>
+    }
+    <h3 style="margin: 18px 0 8px">Últimas asistencias</h3>
+    @for (a of asistDe(s.id); track a.id) {
+      <div class="row small" style="padding: 4px 0">
+        <span>{{ a.fecha }}</span
+        ><span class="spacer"></span><app-estado [valor]="a.resultado" />
+      </div>
+    } @empty {
+      <span class="muted">Sin asistencias.</span>
+    }
+    <ng-container pie
+      ><button class="btn" (click)="ficha.set(null)">Cerrar</button></ng-container
+    ></app-modal
+  >
+}
+
+@if (aDesactivar(); as s) {
+  <app-confirm
+    [titulo]="s.activo ? 'Desactivar socio' : 'Reactivar socio'"
+    [mensaje]="
+      '¿Seguro que deseas ' +
+      (s.activo ? 'desactivar' : 'reactivar') +
+      ' a ' +
+      s.nombre +
+      ' ' +
+      s.apellido +
+      '?'
+    "
+    [textoConfirmar]="s.activo ? 'Desactivar' : 'Reactivar'"
+    [peligro]="s.activo"
+    (cancelar)="aDesactivar.set(null)"
+    (confirmar)="toggle(s)"
+  />
+}
+@if (aEliminar(); as s) {
+  <app-confirm
+    titulo="Eliminar socio"
+    [mensaje]="
+      '¿Seguro que deseas eliminar a ' +
+      s.nombre +
+      ' ' +
+      s.apellido +
+      '? Esta acción no se puede deshacer.'
+    "
+    textoConfirmar="Eliminar"
+    (cancelar)="aEliminar.set(null)"
+    (confirmar)="eliminar(s)"
+  />
+}

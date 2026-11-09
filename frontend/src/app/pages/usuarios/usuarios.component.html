@@ -1,0 +1,323 @@
+
+<div class="page-head">
+  <div>
+    <h1>Usuarios y roles</h1>
+    <p>Administración de usuarios, asignación de roles y permisos.</p>
+  </div>
+
+  @if (tab() === 'u' && data.puede('Usuarios', 'crear')) {
+    <button class="btn primary" (click)="nuevo()">
+      <app-icon name="plus" [size]="16" />
+      Nuevo usuario
+    </button>
+  }
+</div>
+
+<div class="tabs">
+  <button
+    class="tab"
+    [class.active]="tab() === 'u'"
+    (click)="tab.set('u')"
+  >
+    Usuarios
+  </button>
+
+  <button
+    class="tab"
+    [class.active]="tab() === 'r'"
+    (click)="tab.set('r')"
+  >
+    Roles y permisos
+  </button>
+</div>
+
+@if (tab() === 'u') {
+
+  <div class="card">
+    @if (cargando()) {
+      <p class="muted">Cargando usuarios...</p>
+    }
+
+    @if (error()) {
+      <div class="err" role="alert">
+        {{ error() }}
+        <button class="btn" (click)="listarUsuarios()">
+          Reintentar
+        </button>
+      </div>
+    }
+
+    @if (!cargando() && !error()) {
+      <div class="table-wrap stack-cards">
+        <table>
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Nombre</th>
+              <th>Apellido</th>
+              <th>Correo</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Último acceso</th>
+              <th></th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (u of usuarios(); track u.id_usuario) {
+              <tr>
+                <td data-l="Usuario" class="mono">
+                  {{ u.correo.split('@')[0] }}
+                </td>
+
+                <td data-l="Nombre">
+                  {{ u.nombres }}
+                </td>
+
+                <td data-l="Apellido">
+                  {{ u.apellidos }}
+                </td>
+
+                <td data-l="Correo">
+                  {{ u.correo }}
+                </td>
+
+                <td data-l="Rol">
+                  {{ u.rol }}
+                </td>
+
+                <td data-l="Estado">
+                  <app-estado
+                    [valor]="u.estado"
+                  />
+                </td>
+
+                <td data-l="Último acceso">
+                  —
+                </td>
+
+                <td class="td-actions">
+
+                  <button
+                    class="icon-btn"
+                    title="Editar / asignar rol"
+                    (click)="editar(comoUsuario(u))"
+                  >
+                    <app-icon name="edit" />
+                  </button>
+
+                  <button
+                    class="icon-btn"
+                    title="Restablecer contraseña"
+                    (click)="aReset.set(comoUsuario(u))"
+                  >
+                    <app-icon name="key" />
+                  </button>
+
+                  <button
+                    class="icon-btn"
+                    [title]="u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'"
+                    (click)="aToggle.set(comoUsuario(u))"
+                  >
+                    <app-icon
+                      [name]="u.estado === 'ACTIVO' ? 'ban' : 'refresh'"
+                    />
+                  </button>
+
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" style="text-align: center">
+                  No hay usuarios registrados.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+} @else {
+
+  <div class="stack">
+    @for (r of roles; track r) {
+      <div class="card">
+        <h3 style="margin-bottom: 12px">{{ r }}</h3>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Módulo</th>
+
+                @for (a of acciones; track a) {
+                  <th style="text-align: center">{{ a }}</th>
+                }
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (m of modulos; track m) {
+                <tr>
+                  <td>{{ m }}</td>
+
+                  @for (a of acciones; track a) {
+                    <td style="text-align: center">
+                      <input
+                        type="checkbox"
+                        [checked]="tiene(r, m, a)"
+                        [disabled]="r === 'Administrador'"
+                        (change)="data.togglePermiso(r, m, a)"
+                        [attr.aria-label]="r + ' ' + m + ' ' + a"
+                      />
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<!-- MODAL CREAR / EDITAR USUARIO -->
+
+@if (form(); as f) {
+  <app-modal
+    [titulo]="f.id ? 'Editar usuario' : 'Nuevo usuario'"
+    (cerrar)="form.set(null)"
+  >
+    <div class="form-grid">
+
+      <div class="field">
+        <label>Usuario</label>
+        <input
+          class="input"
+          [(ngModel)]="f.usuario"
+          [class.invalid]="intento() && !f.usuario?.trim()"
+        />
+      </div>
+
+      <div class="field">
+        <label>Nombre</label>
+        <input
+          class="input"
+          [(ngModel)]="f.nombre"
+          [class.invalid]="intento() && !f.nombre?.trim()"
+        />
+      </div>
+
+      <div class="field">
+        <label>Apellido</label>
+        <input
+          class="input"
+          [(ngModel)]="f.apellido"
+          [class.invalid]="intento() && !f.apellido?.trim()"
+        />
+      </div>
+
+      <div class="field">
+        <label>Correo electrónico*</label>
+        <input
+          class="input"
+          type="email"
+          [(ngModel)]="f.correo"
+          [class.invalid]="intento() && !f.correo?.trim()"
+          required
+        />
+      </div>
+
+      <div class="field">
+        <label>Rol</label>
+        <select class="select" [(ngModel)]="f.rol">
+          @for (r of roles; track r) {
+            <option [ngValue]="r">{{ r }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="field">
+        <label>
+          {{ f.id ? 'Nueva contraseña (opcional)' : 'Contraseña' }}
+        </label>
+
+        <div class="row" style="flex-wrap: nowrap">
+          <input
+            class="input"
+            [type]="ver() ? 'text' : 'password'"
+            [(ngModel)]="f.password"
+            [class.invalid]="intento() && !f.id && (f.password?.length ?? 0) < 8"
+          />
+
+          <button
+            type="button"
+            class="icon-btn"
+            (click)="ver.set(!ver())"
+            aria-label="Mostrar u ocultar"
+          >
+            <app-icon name="eye" />
+          </button>
+        </div>
+
+        <div class="bar-cap">
+          <div
+            [style.width.%]="fuerza(f.password ?? '') * 25"
+            [style.background]="fuerza(f.password ?? '') < 3 ? 'var(--bad)' : 'var(--ok)'"
+          ></div>
+        </div>
+
+        @if (intento() && !f.id && (f.password?.length ?? 0) < 8) {
+          <span class="err">Mínimo 8 caracteres.</span>
+        }
+      </div>
+
+    </div>
+
+    <ng-container pie>
+      <button class="btn" (click)="form.set(null)">
+        Cancelar
+      </button>
+
+      <button class="btn primary" (click)="guardar()">
+        Guardar
+      </button>
+    </ng-container>
+
+  </app-modal>
+}
+
+<!-- CONFIRMAR ACTIVAR / DESACTIVAR -->
+
+@if (aToggle(); as u) {
+  <app-confirm
+    [titulo]="u.activo ? 'Desactivar usuario' : 'Activar usuario'"
+    [mensaje]="
+      '¿Seguro que deseas ' +
+      (u.activo ? 'desactivar' : 'activar') +
+      ' al usuario ' +
+      u.usuario +
+      '?'
+    "
+    [peligro]="u.activo"
+    [textoConfirmar]="u.activo ? 'Desactivar' : 'Activar'"
+    (cancelar)="aToggle.set(null)"
+    (confirmar)="toggle(u)"
+  />
+}
+
+<!-- CONFIRMAR RESTABLECER CONTRASEÑA -->
+
+@if (aReset(); as u) {
+  <app-confirm
+    titulo="Restablecer contraseña"
+    [mensaje]="'Se enviará un enlace de restablecimiento a ' + u.nombre + '.'"
+    textoConfirmar="Restablecer"
+    [peligro]="false"
+    (cancelar)="aReset.set(null)"
+    (confirmar)="reset(u)"
+  />
+}

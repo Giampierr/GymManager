@@ -1,0 +1,71 @@
+<div class="page-head">
+  <div>
+    <h1>Registro de auditoría</h1>
+    <p>Historial de solo lectura de las operaciones administrativas.</p>
+  </div>
+</div>
+<div class="card">
+  <div class="filters" style="margin-bottom: 14px">
+    <div class="field">
+      <label>Usuario</label><input class="input" [ngModel]="u()" (ngModelChange)="u.set($event)" />
+    </div>
+    <div class="field">
+      <label>Módulo</label
+      ><select class="select" [ngModel]="m()" (ngModelChange)="m.set($event)">
+        <option value="">Todos</option>
+        @for (x of modulos; track x) {
+          <option>{{ x }}</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label>Acción</label
+      ><select class="select" [ngModel]="a()" (ngModelChange)="a.set($event)">
+        <option value="">Todas</option>
+        @for (x of acciones; track x) {
+          <option>{{ x }}</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label>Desde</label
+      ><input type="date" class="input" [ngModel]="d()" (ngModelChange)="d.set($event)" />
+    </div>
+    <div class="field">
+      <label>Hasta</label
+      ><input type="date" class="input" [ngModel]="h()" (ngModelChange)="h.set($event)" />
+    </div>
+  </div>
+  <div class="table-wrap stack-cards">
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha y hora</th>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>Módulo</th>
+          <th>Acción</th>
+          <th>Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (x of lista(); track x.id) {
+          <tr>
+            <td data-l="Fecha">{{ x.fecha }}</td>
+            <td data-l="Usuario" class="mono">{{ x.usuario }}</td>
+            <td data-l="Rol">{{ x.rol }}</td>
+            <td data-l="Módulo">{{ x.modulo }}</td>
+            <td data-l="Acción">
+              <span class="chip acc">{{ x.accion }}</span>
+            </td>
+            <td data-l="Detalle" style="white-space: normal">{{ x.detalle }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="empty">No se encontraron registros.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

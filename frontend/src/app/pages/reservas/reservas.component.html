@@ -1,0 +1,306 @@
+<div class="page-head">
+  <div>
+    <h1>Clases y reservas</h1>
+    <p>Clases grupales, control de cupos, reservas e historial.</p>
+  </div>
+  <div class="row">
+    @if (data.puede('Reservas', 'crear')) {
+      <button class="btn" (click)="nuevaClase()">
+        <app-icon name="plus" [size]="16" />Nueva clase</button
+      ><button class="btn primary" (click)="nuevaReserva(null)">
+        <app-icon name="plus" [size]="16" />Nueva reserva
+      </button>
+    }
+  </div>
+</div>
+<div class="tabs">
+  <button class="tab" [class.active]="tab() === 'c'" (click)="tab.set('c')">
+    Calendario semanal</button
+  ><button class="tab" [class.active]="tab() === 'l'" (click)="tab.set('l')">Lista de clases</button
+  ><button class="tab" [class.active]="tab() === 'h'" (click)="tab.set('h')">
+    Historial de reservas
+  </button>
+</div>
+
+@if (tab() === 'c') {
+  <div class="cal">
+    @for (d of [1, 2, 3, 4, 5, 6]; track d) {
+      <div class="card dia">
+        <b>{{ dias[d] }}</b>
+        @for (c of clasesDia(d); track c.id) {
+          <button class="cls" (click)="detalle.set(c)">
+            <div class="small muted">{{ c.hora }} · {{ c.sala }}</div>
+            <b>{{ c.nombre }}</b>
+            <div class="small">{{ data.entrenador(c.idEntrenador)?.nombre }}</div>
+            <div class="bar-cap" style="margin-top: 6px">
+              <div [style.width.%]="pct(c)" [style.background]="color(c)"></div>
+            </div>
+            <div class="small muted">{{ ocupados(c) }}/{{ c.cupo }} cupos</div>
+          </button>
+        } @empty {
+          <div class="small muted" style="margin-top: 8px">Sin clases</div>
+        }
+      </div>
+    }
+  </div>
+}
+@if (tab() === 'l') {
+  <div class="card">
+    <div class="table-wrap stack-cards">
+      <table>
+        <thead>
+          <tr>
+            <th>Clase</th>
+            <th>Entrenador</th>
+            <th>Día y hora</th>
+            <th>Sala</th>
+            <th>Cupos</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of data.clases(); track c.id) {
+            <tr>
+              <td data-l="Clase">
+                <b>{{ c.nombre }}</b>
+              </td>
+              <td data-l="Entrenador">{{ data.entrenador(c.idEntrenador)?.nombre }}</td>
+              <td data-l="Día">{{ dias[c.dia] }} {{ c.hora }}</td>
+              <td data-l="Sala">{{ c.sala }}</td>
+              <td data-l="Cupos" style="min-width: 150px">
+                <div class="bar-cap">
+                  <div [style.width.%]="pct(c)" [style.background]="color(c)"></div>
+                </div>
+                <span class="small muted"
+                  >{{ ocupados(c) }}/{{ c.cupo }} · {{ estadoCupo(c) }}</span
+                >
+              </td>
+              <td class="td-actions">
+                <button class="btn sm" (click)="detalle.set(c)">Detalle</button>
+                @if (data.puede('Reservas', 'editar')) {
+                  <button class="icon-btn" title="Editar" (click)="editarClase(c)">
+                    <app-icon name="edit" />
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+@if (tab() === 'h') {
+  <div class="card">
+    <div class="filters" style="margin-bottom: 14px">
+      <div class="field">
+        <label>Socio</label
+        ><input class="input" [ngModel]="hSocio()" (ngModelChange)="hSocio.set($event)" />
+      </div>
+      <div class="field">
+        <label>Clase</label
+        ><select class="select" [ngModel]="hClase()" (ngModelChange)="hClase.set($event)">
+          <option value="">Todas</option>
+          @for (c of data.clases(); track c.id) {
+            <option [value]="c.id">{{ c.nombre }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label>Estado</label
+        ><select class="select" [ngModel]="hEstado()" (ngModelChange)="hEstado.set($event)">
+          <option value="">Todos</option>
+          <option>RESERVADA</option>
+          <option>CANCELADA</option>
+          <option>ASISTIÓ</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Desde</label
+        ><input
+          type="date"
+          class="input"
+          [ngModel]="hDesde()"
+          (ngModelChange)="hDesde.set($event)"
+        />
+      </div>
+    </div>
+    <div class="table-wrap stack-cards">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Socio</th>
+            <th>Clase</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of historial(); track r.id) {
+            <tr>
+              <td data-l="Fecha">{{ fecha(r.fecha) }}</td>
+              <td data-l="Socio">{{ data.nombreSocio(r.idSocio) }}</td>
+              <td data-l="Clase">{{ data.clase(r.idClase)?.nombre }}</td>
+              <td data-l="Estado"><app-estado [valor]="r.estado" /></td>
+              <td class="td-actions">
+                @if (r.estado === 'RESERVADA' && data.puede('Reservas', 'desactivar')) {
+                  <button class="btn sm danger" (click)="aCancelar.set(r)">Cancelar</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="empty">No se encontraron reservas.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+@if (detalle(); as c) {
+  <app-modal [titulo]="c.nombre" (cerrar)="detalle.set(null)"
+    ><div class="row">
+      <span class="muted"
+        >{{ dias[c.dia] }} {{ c.hora }} · {{ c.sala }} ·
+        {{ data.entrenador(c.idEntrenador)?.nombre }}</span
+      >
+    </div>
+    <div class="bar-cap" style="margin: 12px 0 4px">
+      <div [style.width.%]="pct(c)" [style.background]="color(c)"></div>
+    </div>
+    <div class="small muted">
+      {{ ocupados(c) }} de {{ c.cupo }} cupos ocupados · {{ c.cupo - ocupados(c) }} disponibles ({{
+        estadoCupo(c)
+      }})
+    </div>
+    <h3 style="margin: 18px 0 8px">Socios reservados</h3>
+    @for (r of data.reservasActivas(c.id); track r.id) {
+      <div class="row" style="padding: 6px 0; border-bottom: 1px solid var(--border)">
+        <span>{{ data.nombreSocio(r.idSocio) }}</span>
+        <div class="spacer"></div>
+        @if (data.puede('Reservas', 'desactivar')) {
+          <button class="btn sm danger" (click)="aCancelar.set(r)">Cancelar</button>
+        }
+      </div>
+    } @empty {
+      <span class="muted">Aún no hay reservas.</span>
+    }
+    <ng-container pie
+      ><button class="btn" (click)="detalle.set(null)">Cerrar</button>
+      @if (data.puede('Reservas', 'crear')) {
+        <button class="btn primary" (click)="nuevaReserva(c)">Reservar</button>
+      }
+    </ng-container></app-modal
+  >
+}
+@if (modalRes()) {
+  <app-modal titulo="Nueva reserva" [ancho]="520" (cerrar)="modalRes.set(false)"
+    ><div class="stack">
+      <div class="field">
+        <label>Socio</label
+        ><select class="select" [(ngModel)]="rSocio" [class.invalid]="intento() && !rSocio">
+          <option [ngValue]="0">Selecciona un socio…</option>
+          @for (s of data.sociosActivos(); track s.id) {
+            <option [ngValue]="s.id">{{ s.codigo }} · {{ s.nombre }} {{ s.apellido }}</option>
+          }
+        </select>
+        @if (intento() && !rSocio) {
+          <span class="err">Selecciona un socio.</span>
+        }
+      </div>
+      <div class="field">
+        <label>Clase</label
+        ><select class="select" [(ngModel)]="rClase">
+          <option [ngValue]="0">Selecciona una clase…</option>
+          @for (c of data.clases(); track c.id) {
+            <option [ngValue]="c.id">
+              {{ c.nombre }} · {{ dias[c.dia] }} {{ c.hora }} ({{ c.cupo - ocupados(c) }} cupos)
+            </option>
+          }
+        </select>
+        @if (intento() && !rClase) {
+          <span class="err">Selecciona una clase.</span>
+        }
+      </div>
+      @if (errRes()) {
+        <div class="result bad" role="alert">
+          <p>{{ errRes() }}</p>
+        </div>
+      }
+    </div>
+    <ng-container pie
+      ><button class="btn" (click)="modalRes.set(false)">Cancelar</button
+      ><button class="btn primary" (click)="reservar()">Reservar</button></ng-container
+    ></app-modal
+  >
+}
+@if (formClase(); as f) {
+  <app-modal [titulo]="f.id ? 'Editar clase' : 'Nueva clase'" (cerrar)="formClase.set(null)"
+    ><div class="form-grid">
+      <div class="field full">
+        <label>Nombre</label
+        ><input
+          class="input"
+          [(ngModel)]="f.nombre"
+          [class.invalid]="intento() && !f.nombre?.trim()"
+        />
+      </div>
+      <div class="field">
+        <label>Entrenador</label
+        ><select class="select" [(ngModel)]="f.idEntrenador">
+          @for (e of data.entrenadores(); track e.id) {
+            @if (e.activo) {
+              <option [ngValue]="e.id">{{ e.nombre }}</option>
+            }
+          }
+        </select>
+      </div>
+      <div class="field"><label>Sala</label><input class="input" [(ngModel)]="f.sala" /></div>
+      <div class="field">
+        <label>Día</label
+        ><select class="select" [(ngModel)]="f.dia">
+          @for (d of [1, 2, 3, 4, 5, 6]; track d) {
+            <option [ngValue]="d">{{ dias[d] }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label>Hora</label><input type="time" class="input" [(ngModel)]="f.hora" />
+      </div>
+      <div class="field">
+        <label>Cupo máximo</label
+        ><input
+          type="number"
+          class="input"
+          [(ngModel)]="f.cupo"
+          [class.invalid]="intento() && !(f.cupo && f.cupo > 0)"
+        />
+        @if (intento() && !(f.cupo && f.cupo > 0)) {
+          <span class="err">El cupo debe ser mayor a 0.</span>
+        }
+      </div>
+    </div>
+    <ng-container pie
+      ><button class="btn" (click)="formClase.set(null)">Cancelar</button
+      ><button class="btn primary" (click)="guardarClase()">Guardar</button></ng-container
+    ></app-modal
+  >
+}
+@if (aCancelar(); as r) {
+  <app-confirm
+    titulo="Cancelar reserva"
+    [mensaje]="
+      '¿Cancelar la reserva de ' +
+      data.nombreSocio(r.idSocio) +
+      ' en ' +
+      data.clase(r.idClase)?.nombre +
+      '?'
+    "
+    textoConfirmar="Cancelar reserva"
+    (cancelar)="aCancelar.set(null)"
+    (confirmar)="cancelar(r)"
+  />
+}

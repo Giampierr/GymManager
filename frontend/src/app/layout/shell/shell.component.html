@@ -1,0 +1,69 @@
+<div class="shell">
+  <aside class="side" [class.open]="abierto()">
+    <div class="brand">
+      <div class="logo">F</div>
+      <div>
+        <b>FORMA</b>
+        <div class="small">GYM CLUB</div>
+      </div>
+    </div>
+    @for (g of grupos; track g.titulo) {
+      @if (visibles(g).length) {
+        <div class="grp">{{ g.titulo }}</div>
+        @for (i of visibles(g); track i.ruta) {
+          <a
+            class="nav"
+            [routerLink]="i.ruta"
+            routerLinkActive="active"
+            (click)="abierto.set(false)"
+            ><app-icon [name]="i.icono" /><span>{{ i.texto }}</span></a
+          >
+        }
+      }
+    }
+    <div class="foot">
+      <div class="small">Sistema operativo</div>
+      <div class="small">Datos de ejemplo</div>
+    </div>
+  </aside>
+  @if (abierto()) {
+    <div class="scrim" (click)="abierto.set(false)"></div>
+  }
+  <div class="main">
+    <header class="top">
+      <button class="icon-btn menu" (click)="abierto.set(!abierto())" aria-label="Menú">
+        <app-icon name="menu" />
+      </button>
+      <div class="small muted">
+        FORMA Gym Club / <b style="color: var(--text)">{{ titulo() }}</b>
+      </div>
+      <div class="spacer"></div>
+      <button
+        class="btn sm"
+        (click)="tema.alternar()"
+        [attr.aria-label]="'Cambiar a modo ' + (tema.modo() === 'light' ? 'oscuro' : 'claro')"
+      >
+        <app-icon [name]="tema.modo() === 'light' ? 'moon' : 'sun'" [size]="16" /><span
+          class="lbl"
+          >{{ tema.modo() === 'light' ? 'Modo oscuro' : 'Modo claro' }}</span
+        >
+      </button>
+      <div class="user">
+        <button class="avatar" (click)="menuUser.set(!menuUser())" aria-label="Menú del usuario">
+          {{ iniciales() }}
+        </button>
+        @if (menuUser()) {
+          <div class="dd card">
+            <b>{{ data.usuarioActual()?.nombre }}</b>
+            <div class="small muted">{{ data.usuarioActual()?.rol }}</div>
+            <hr style="border: 0; border-top: 1px solid var(--border); margin: 10px 0" />
+            <button class="btn sm" style="width: 100%" (click)="auth.logout()">
+              <app-icon name="logout" [size]="16" />Cerrar sesión
+            </button>
+          </div>
+        }
+      </div>
+    </header>
+    <main class="content"><router-outlet /></main>
+  </div>
+</div>

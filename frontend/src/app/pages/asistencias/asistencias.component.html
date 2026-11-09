@@ -1,0 +1,145 @@
+<div class="page-head">
+  <div>
+    <h1>Asistencias y control de acceso</h1>
+    <p>Registro de entradas, validación de membresías y estadísticas.</p>
+  </div>
+</div>
+<div class="grid g2" style="margin-bottom: 16px">
+  <div class="card stack">
+    <h3>Registrar ingreso</h3>
+    <div class="field">
+      <label>Código, DNI o ID del socio</label>
+      <div class="row" style="flex-wrap: nowrap">
+        <input
+          class="input"
+          [(ngModel)]="q"
+          (keydown.enter)="validar()"
+          placeholder="SOC001, 12345678 o 1"
+          [class.invalid]="!!errorId()"
+        /><button class="btn primary" (click)="validar()">
+          <app-icon name="door" [size]="16" />Validar
+        </button>
+      </div>
+      @if (errorId()) {
+        <span class="err">{{ errorId() }}</span>
+      }
+    </div>
+    <div class="row">
+      <button class="btn sm" (click)="renovar()">¿Necesita renovar?</button
+      ><button class="btn sm" (click)="suspendido()">¿Está suspendido?</button>
+    </div>
+    @if (res(); as r) {
+      <div class="result" [class]="r.clase" role="status">
+        <div style="font-size: 30px; font-weight: 800">
+          {{ r.clase === 'ok' ? '✓' : r.clase === 'mute' ? '?' : '!' }}
+        </div>
+        <div>
+          <h3>{{ r.titulo }}</h3>
+          @if (r.detalle) {
+            <p>{{ r.detalle }}</p>
+          }
+        </div>
+      </div>
+    }
+  </div>
+  <div class="card">
+    <h3>Indicadores</h3>
+    <div class="grid g2" style="margin-top: 12px">
+      <div>
+        <div class="small muted">Ingresos de hoy</div>
+        <div style="font-size: 28px; font-weight: 800; font-family: Cambria, serif">
+          {{ totalHoy() }}
+        </div>
+      </div>
+      <div>
+        <div class="small muted">Ingresos del mes</div>
+        <div style="font-size: 28px; font-weight: 800; font-family: Cambria, serif">
+          {{ totalMes() }}
+        </div>
+      </div>
+    </div>
+    <h3 style="margin: 18px 0 8px">Socios con más asistencias</h3>
+    @for (t of top(); track t[0]) {
+      <div class="row" style="padding: 5px 0; border-bottom: 1px solid var(--border)">
+        <span>{{ data.nombreSocio(t[0]) }}</span>
+        <div class="spacer"></div>
+        <b>{{ t[1] }}</b>
+      </div>
+    }
+  </div>
+</div>
+<div class="grid g2" style="margin-bottom: 16px">
+  <div class="card">
+    <h3>Ingresos por día de la semana</h3>
+    <app-bar-chart
+      [etiquetas]="['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']"
+      [valores]="porDia()"
+      titulo="Ingresos por día"
+    />
+  </div>
+  <div class="card">
+    <h3>Ingresos por franja horaria</h3>
+    <app-bar-chart
+      [etiquetas]="['6-9', '9-12', '12-15', '15-18', '18-21', '21+']"
+      [valores]="porFranja()"
+      color="var(--accent2)"
+      titulo="Ingresos por franja"
+    />
+  </div>
+</div>
+<div class="card">
+  <h3 style="margin-bottom: 12px">Historial de entradas</h3>
+  <div class="filters" style="margin-bottom: 14px">
+    <div class="field">
+      <label>Desde</label
+      ><input type="date" class="input" [ngModel]="desde()" (ngModelChange)="desde.set($event)" />
+    </div>
+    <div class="field">
+      <label>Hasta</label
+      ><input type="date" class="input" [ngModel]="hasta()" (ngModelChange)="hasta.set($event)" />
+    </div>
+    <div class="field">
+      <label>Socio (nombre o código)</label
+      ><input class="input" [ngModel]="socioQ()" (ngModelChange)="socioQ.set($event)" />
+    </div>
+    <div class="field">
+      <label>Resultado</label
+      ><select class="select" [ngModel]="resF()" (ngModelChange)="resF.set($event)">
+        <option value="">Todos</option>
+        <option value="PERMITIDO">Permitido</option>
+        <option value="VENCIDA">Vencida</option>
+        <option value="SUSPENDIDA">Suspendida</option>
+        <option value="NO_ENCONTRADO">No encontrado</option>
+      </select>
+    </div>
+  </div>
+  <div class="table-wrap stack-cards">
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha y hora</th>
+          <th>Socio</th>
+          <th>Código</th>
+          <th>Resultado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (a of historial().slice(0, 25); track a.id) {
+          <tr>
+            <td data-l="Fecha">{{ fecha(a.fecha) }} {{ a.fecha.slice(11) }}</td>
+            <td data-l="Socio">{{ a.idSocio ? data.nombreSocio(a.idSocio) : '—' }}</td>
+            <td data-l="Código" class="mono">{{ a.codigo }}</td>
+            <td data-l="Resultado"><app-estado [valor]="a.resultado" /></td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4" class="empty">No se encontraron registros.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div class="small muted" style="margin-top: 8px">
+    Mostrando {{ Math.min(25, historial().length) }} de {{ historial().length }} registros.
+  </div>
+</div>

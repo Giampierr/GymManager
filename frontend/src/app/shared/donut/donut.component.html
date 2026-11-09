@@ -1,0 +1,50 @@
+<div class="row" style="gap: 20px; flex-wrap: nowrap">
+  <svg width="150" height="150" viewBox="0 0 42 42" role="img" aria-label="Distribución">
+    <circle
+      cx="21"
+      cy="21"
+      r="15.915"
+      fill="none"
+      style="stroke: var(--mute-bg)"
+      stroke-width="6"
+    />
+    @for (s of segs(); track s.label) {
+      <circle
+        cx="21"
+        cy="21"
+        r="15.915"
+        fill="none"
+        [style.stroke]="s.color"
+        stroke-width="6"
+        [attr.stroke-dasharray]="s.dash"
+        [attr.stroke-dashoffset]="s.off"
+        transform="rotate(-90 21 21)"
+      />
+    }
+    <text
+      x="21"
+      y="22.5"
+      text-anchor="middle"
+      font-size="8"
+      font-weight="800"
+      style="fill: var(--text)"
+    >
+      {{ total() }}
+    </text>
+    <text x="21" y="28" text-anchor="middle" font-size="3" style="fill: var(--text2)">
+      {{ centro }}
+    </text>
+  </svg>
+  <div class="stack" style="gap: 8px">
+    @for (s of segs(); track s.label) {
+      <div class="row" style="gap: 8px">
+        <span
+          [style.background]="s.color"
+          style="width: 10px; height: 10px; border-radius: 3px"
+        ></span
+        ><span>{{ s.label }}</span
+        ><b>{{ s.value }}</b>
+      </div>
+    }
+  </div>
+</div>

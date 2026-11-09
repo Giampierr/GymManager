@@ -1,0 +1,18 @@
+<div class="backdrop" (click)="cerrar.emit()" (keydown.escape)="cerrar.emit()">
+  <div
+    class="modal"
+    role="dialog"
+    aria-modal="true"
+    [style.width.px]="ancho"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="modal-head">
+      <h2>{{ titulo }}</h2>
+      <button class="icon-btn" (click)="cerrar.emit()" aria-label="Cerrar">
+        <app-icon name="x" />
+      </button>
+    </div>
+    <div class="modal-body"><ng-content /></div>
+    <div class="modal-foot"><ng-content select="[pie]" /></div>
+  </div>
+</div>

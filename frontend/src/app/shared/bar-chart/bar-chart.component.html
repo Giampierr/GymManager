@@ -1,0 +1,49 @@
+<svg [attr.viewBox]="'0 0 ' + W + ' ' + H" width="100%" role="img" [attr.aria-label]="titulo">
+  @for (t of ticks(); track t) {
+    <line
+      [attr.x1]="L"
+      [attr.x2]="W - 8"
+      [attr.y1]="y(t)"
+      [attr.y2]="y(t)"
+      style="stroke: var(--border)"
+    />
+    <text
+      [attr.x]="L - 8"
+      [attr.y]="y(t) + 4"
+      text-anchor="end"
+      font-size="11"
+      style="fill: var(--text2)"
+    >
+      {{ t }}
+    </text>
+  }
+  @for (v of valores; track $index) {
+    <rect
+      [attr.x]="x($index)"
+      [attr.y]="y(v)"
+      [attr.width]="bw()"
+      [attr.height]="H - B - y(v)"
+      rx="5"
+      [style.fill]="color"
+    />
+    <text
+      [attr.x]="x($index) + bw() / 2"
+      [attr.y]="y(v) - 6"
+      text-anchor="middle"
+      font-size="12"
+      font-weight="700"
+      style="fill: var(--text)"
+    >
+      {{ v }}
+    </text>
+    <text
+      [attr.x]="x($index) + bw() / 2"
+      [attr.y]="H - 8"
+      text-anchor="middle"
+      font-size="12"
+      style="fill: var(--text2)"
+    >
+      {{ etiquetas[$index] }}
+    </text>
+  }
+</svg>
